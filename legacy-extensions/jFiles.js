@@ -4,7 +4,7 @@
   const variables = {}
 
   if (!Scratch.extensions.unsandboxed) {
-    throw new Error("files extension must be run unsandboxed");
+    throw new Error("jFiles extension must be run unsandboxed");
   }
 
   const MODE_MODAL = "modal";
@@ -267,7 +267,7 @@
     getInfo() {
       return {
         id: "FilesUtil",
-        name: "File Utilites",
+        name: "jFiles",
         color1: "#fcb103",
         color2: "#db9a37",
         color3: "#db8937",
