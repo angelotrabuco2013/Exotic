@@ -1,3 +1,4 @@
-# DinosaurMod
+# Remix v2.0
+Under contruction...
 
-all dinosaurmod extension-code are in this repository.
+<!-- Real version: 2.0.1 -->
