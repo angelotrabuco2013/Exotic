@@ -51,13 +51,15 @@
 
 1.10. "Modifications"
     means any of the following:
-
+<p>
     (a) any file in Source Code Form that results from an addition to,
         deletion from, or modification of the contents of Covered
         Software; or
-
+</p>
+<p>
     (b) any new file in Source Code Form that contains any Covered
         Software.
+</p>
 
 1.11. "Patent Claims" of a Contributor
     means any patent claim(s), including without limitation, method,
