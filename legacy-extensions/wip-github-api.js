@@ -78,37 +78,32 @@
             }
         }
         GithubAPI_Fetch(args, util) {
-          let api_url = 'https://api.github.com/' + 'repos/' + args.ORG + '/' + args.REPO
+          let api_url = 'https://api.github.com/repos/' + args.ORG + '/' + args.REPO
           if (args.LIST === 'Repo ID') {
-            const result = Scratch.fetch(api_url)
+            return Scratch.fetch(api_url)
             .then( res => res.json())
             .then(data => (data.id))
             .catch(() => "");
-            return result
           } else if (args.LIST === 'Node ID') {
-            const result = Scratch.fetch(api_url)
+            return Scratch.fetch(api_url)
             .then( res => res.json())
             .then(data => (data.node_id))
             .catch(() => "");
-            return result
           } else if (args.LIST === 'Description') {
-            const result = Scratch.fetch(api_url)
+            return Scratch.fetch(api_url)
             .then( res => res.json())
             .then(data => (data.description))
             .catch(() => "");
-            return result
           } else if (args.LIST === 'Created at') {
-            const result = Scratch.fetch(api_url)
+            return Scratch.fetch(api_url)
             .then( res => res.json())
             .then(data => (data.created_at))
             .catch(() => "");
-            return result
           } else if (args.LIST === 'Most Used Language') {
-            const result = Scratch.fetch(api_url)
+            return Scratch.fetch(api_url)
             .then( res => res.json())
             .then(data => (data.language))
             .catch(() => "");
-            return result
           }
           
         }
@@ -118,6 +113,10 @@
         d() {
           return true
         }
+        _GithubAPI_FetchURL() {
+          
+        }
+
     }
 
     Scratch.extensions.register(new Extension());

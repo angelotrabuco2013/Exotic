@@ -7,6 +7,10 @@
     const variables = {};
     let vm = Scratch.vm
 
+    if (!Scratch.extensions.unsandboxed) {
+      throw new Error('This extension must run unsandboxed');
+    }
+
     let FULLSCREENMENU = [
       'enable',
       'disable'
@@ -24,10 +28,17 @@
     document.oncontextmenu = enable;
     let isDisabled = false;
 
+    const videoElement = document.createElement('video');
+    videoElement.style.display = 'none';
+    document.body.appendChild(videoElement);
+
+    let mediaStream = null;
+
     class Extension {
       constructor(runtime) {
         this.runtime = runtime
         this.runtime.on("PROJECT_STOP_ALL", this.stopAll.bind(this));
+        this.thing = 0
       }
         getInfo() {
             return {
@@ -73,13 +84,17 @@
                   },
                   {
                     opcode: 'WebExt_OpenWeb',
-                    text: 'open website [URL] in new tab',
+                    text: 'open website [URL] in new [TARGET]',
                     blockType: Scratch.BlockType.COMMAND,
                     arguments: {
                         URL: {
                             type: Scratch.ArgumentType.STRING,
-                            defaultValue: 'https://www.youtube.com'
-                        }
+                            defaultValue: 'https://example.com'
+                        },
+                        TARGET: {
+                          type: Scratch.ArgumentType.STRING,
+                          menu: 'TARGET_MENU'
+                        },
                     }
                   },
                   {
@@ -89,7 +104,7 @@
                     arguments: {
                         URL: {
                             type: Scratch.ArgumentType.STRING,
-                            defaultValue: 'https://www.youtube.com'
+                            defaultValue: 'https://example.com'
                         }
                     }
                   },
@@ -207,8 +222,19 @@
                     arguments: {
                         URL: {
                             type: Scratch.ArgumentType.STRING,
-                            defaultValue: 'https://www.youtube.com/favicon.ico'
+                            defaultValue: 'https://example.com/favicon.ico'
                         }
+                    }
+                  },
+                  {
+                    opcode: 'WebExt_URLFavicon',
+                    text: '[URL] \/ favicon\.ico',
+                    blockType: Scratch.BlockType.REPORTER,
+                    arguments: {
+                      URL: {
+                        type: Scratch.ArgumentType.STRING,
+                        defaultValue: 'URL'
+                      },
                     }
                   },
                   {
@@ -226,17 +252,6 @@
                     text: 'refresh workspace',
                     blockType: Scratch.BlockType.COMMAND,
                     arguments: {}
-                  },
-                  {
-                    opcode: 'WebExt_URLFavicon',
-                    text: '[URL] \/ favicon\.ico',
-                    blockType: Scratch.BlockType.REPORTER,
-                    arguments: {
-                      URL: {
-                        type: Scratch.ArgumentType.STRING,
-                        defaultValue: 'URL'
-                      },
-                    }
                   },
                   {
                     blockType: "label",
@@ -338,6 +353,84 @@
                     text: 'is window touching edge of screen',
                     blockType: Scratch.BlockType.BOOLEAN,
                     arguments: {}
+                  },
+                  {
+                    blockType: "label",
+                    text: "Screen Sharing (Credits to pooiod7)",
+                  },
+                  {
+                    opcode: 'WebExt_startScreenSharing',
+                    blockType: Scratch.BlockType.COMMAND,
+                    text: 'Start Screen Sharing',
+                  },
+                  {
+                    opcode: 'WebExt_stopScreenSharing',
+                    blockType: Scratch.BlockType.COMMAND,
+                    text: 'Stop Screen Sharing',
+                  },
+                  "---",
+                  {
+                    opcode: 'WebExt_getVideoImage',
+                    blockType: Scratch.BlockType.REPORTER,
+                    text: 'Get Video Image as Hex Colors with Resolution [REZ]',
+                    arguments: {
+                      REZ: {
+                        type: Scratch.ArgumentType.NUMBER,
+                        defaultValue: 0.1,
+                      },
+                    },
+                  },
+                  {
+                    opcode: 'WebExt_getFrameDataURI',
+                    blockType: Scratch.BlockType.REPORTER,
+                    text: 'Get Frame as Data URI with Resolution [REZ]',
+                    arguments: {
+                      REZ: {
+                        type: Scratch.ArgumentType.NUMBER,
+                        defaultValue: 0.5,
+                      },
+                    },
+                  },
+                  {
+                    opcode: 'WebExt_getInWebpFormat',
+                    blockType: Scratch.BlockType.REPORTER,
+                    text: 'Get WEBP: rez [REZ] Quality [QUALITY]',
+                    arguments: {
+                      REZ: {
+                        type: Scratch.ArgumentType.NUMBER,
+                        defaultValue: 0.5,
+                      },
+                      QUALITY: {
+                        type: Scratch.ArgumentType.NUMBER,
+                        defaultValue: 0.7, 
+                      },
+                    },
+                  },
+                  {
+                    opcode: 'WebExt_getInJpegFormat',
+                    blockType: Scratch.BlockType.REPORTER,
+                    text: 'Get JPEG: rez [REZ] Quality [QUALITY]',
+                    arguments: {
+                      REZ: {
+                        type: Scratch.ArgumentType.NUMBER,
+                        defaultValue: 0.5,
+                      },
+                      QUALITY: {
+                        type: Scratch.ArgumentType.NUMBER,
+                        defaultValue: 0.7, 
+                      },
+                    },
+                  },
+                  "---",
+                  {
+                    opcode: 'WebExt_isSharing',
+                    blockType: Scratch.BlockType.BOOLEAN,
+                    text: 'Is Sharing?',
+                  },
+                  {
+                    opcode: 'WebExt_getAspectRatio',
+                    blockType: Scratch.BlockType.REPORTER,
+                    text: 'Stream Size',
                   },
                   {
                     blockType: "label",
@@ -553,7 +646,14 @@
                       { text: "enable", value: "true" },
                       { text: "disable", value: "false" },
                     ]
-                  }
+                  },
+                  TARGET_MENU: {
+                    acceptReporters: false,
+                    items: [
+                      { text: "tab", value: "tab" },
+                      { text: "window", value: "window" },
+                    ]
+                  },
                 }
             };
         }
@@ -637,7 +737,14 @@
           .catch(() => "");
           }
         WebExt_OpenWeb(args, util) {
-            window.open(args.URL, '_blank');
+            switch (args.TARGET) {
+              case 'tab':
+                window.open(args.URL, '_blank');
+                break;
+              case 'window':
+                window.open(args.URL, '_blank', 'width=480,height=360');
+                break;
+            }
         }
         WebExt_RedirectWeb(args, util) {
             Scratch.redirect(args.URL);
@@ -755,6 +862,128 @@
                 window.screenLeft >= edgeX ||
                 window.screenTop >= edgeY
             );
+        }
+        WebExt_startScreenSharing() {
+          navigator.mediaDevices
+            .getDisplayMedia({ video: true })
+            .then((stream) => {
+              mediaStream = stream; 
+              videoElement.srcObject = stream;
+              videoElement.play();
+              stream.getVideoTracks()[0].onended = function () {
+                mediaStream = null;
+              };
+            })
+            .catch((error) => {
+              console.error('Error starting screen sharing:', error);
+            });
+        }
+        
+        WebExt_isSharing() {
+          return !!mediaStream && !!videoElement.srcObject;
+        }
+    
+        WebExt_stopScreenSharing() {
+          if (mediaStream) {
+            mediaStream.getTracks().forEach((track) => {
+              track.stop();
+            });
+            videoElement.srcObject = null;
+          }
+        }
+    
+        WebExt_getVideoImage(args) {
+          var rez = args.REZ;
+          if (rez > 1) {
+            rez = 1;
+          }
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const width = videoElement.videoWidth * rez;
+          const height = videoElement.videoHeight * rez;
+          canvas.width = width;
+          canvas.height = height;
+    
+          context.drawImage(videoElement, 0, 0, width, height);
+    
+          const imageData = context.getImageData(0, 0, width, height).data;
+    
+          const hexColors = [];
+          for (let i = 0; i < imageData.length; i += 4) {
+            const r = imageData[i].toString(16).padStart(2, '0');
+            const g = imageData[i + 1].toString(16).padStart(2, '0');
+            const b = imageData[i + 2].toString(16).padStart(2, '0');
+            hexColors.push(`#${r}${g}${b}`);
+          }
+    
+          return hexColors;
+        }
+    
+        WebExt_getFrameDataURI(args) {
+          var rez = args.REZ;
+          if (rez > 1) {
+            rez = 1;
+          }
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const width = videoElement.videoWidth * rez;
+          const height = videoElement.videoHeight * rez;
+          canvas.width = width;
+          canvas.height = height;
+    
+          context.drawImage(videoElement, 0, 0, width, height);
+    
+          const dataURI = canvas.toDataURL('image/png');
+    
+          return dataURI;
+        }
+    
+        WebExt_getInJpegFormat(args) {
+          let rez = args.REZ;
+          if (rez > 1) {
+            rez = 1;
+          }
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const width = videoElement.videoWidth * rez;
+          const height = videoElement.videoHeight * rez;
+          canvas.width = width;
+          canvas.height = height;
+    
+          context.drawImage(videoElement, 0, 0, width, height);
+    
+          const quality = args.QUALITY;
+          const dataURI = canvas.toDataURL('image/jpeg', quality);
+    
+          return dataURI;
+        }
+        
+        WebExt_getInWebpFormat(args) {
+          let rez = args.REZ;
+          if (rez > 1) {
+            rez = 1;
+          }
+        
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const width = videoElement.videoWidth * rez;
+          const height = videoElement.videoHeight * rez;
+          canvas.width = width;
+          canvas.height = height;
+        
+          context.drawImage(videoElement, 0, 0, width, height);
+        
+          const quality = args.QUALITY;
+        
+          const dataURI = canvas.toDataURL('image/webp', quality);
+        
+          return dataURI;
+        }
+    
+        WebExt_getAspectRatio() {
+          const width = videoElement.videoWidth;
+          const height = videoElement.videoHeight;
+          return "["+width+", "+height+"]";
         }
         WebExt_RightClick(args, util) {
             if (args.RIGHTCLICK_MENU === 'enable') {
